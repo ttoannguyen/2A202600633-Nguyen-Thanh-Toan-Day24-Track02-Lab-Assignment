@@ -1,10 +1,10 @@
 # src/encryption/vault.py
 import os
 import base64
-import hashlib
+import json
+
+import pandas as pd
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.backends import default_backend
 
 class SimpleVault:
     """
@@ -75,10 +75,10 @@ class SimpleVault:
         """
         plaintext_dek, encrypted_dek = self.generate_dek()
 
-        # TODO: encrypt data bằng plaintext_dek
+        # Encrypt data bằng plaintext_dek
         aesgcm = AESGCM(plaintext_dek)
         nonce = os.urandom(12)
-        ciphertext = ___   # TODO
+        ciphertext = aesgcm.encrypt(nonce, plaintext.encode(), None)
 
         # Xóa plaintext DEK
         del plaintext_dek
@@ -99,10 +99,11 @@ class SimpleVault:
         encrypted_dek = base64.b64decode(encrypted_payload["encrypted_dek"])
         ciphertext_with_nonce = base64.b64decode(encrypted_payload["ciphertext"])
 
-        # TODO: implement decryption
-        plaintext_dek = ___   # TODO
-        nonce = ___           # TODO (first 12 bytes)
-        ciphertext = ___      # TODO (remaining bytes)
+        # 1. Decrypt DEK bằng KEK
+        plaintext_dek = self.decrypt_dek(encrypted_dek)
+        # 2. Tách nonce (12 byte đầu) và ciphertext (phần còn lại)
+        nonce = ciphertext_with_nonce[:12]
+        ciphertext = ciphertext_with_nonce[12:]
 
         aesgcm = AESGCM(plaintext_dek)
         plaintext = aesgcm.decrypt(nonce, ciphertext, None)
@@ -115,7 +116,6 @@ class SimpleVault:
         TODO: Encrypt một cột trong DataFrame.
         Thay thế giá trị gốc bằng JSON string của encrypted payload.
         """
-        import json
         df = df.copy()
         df[column] = df[column].apply(
             lambda x: json.dumps(self.encrypt_data(str(x)))

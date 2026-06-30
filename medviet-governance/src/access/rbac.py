@@ -20,13 +20,13 @@ def get_current_user(authorization: Optional[str] = Header(None)) -> dict:
     Raise HTTPException 401 nếu token không hợp lệ.
     """
     if not authorization or not authorization.startswith("Bearer "):
-        raise HTTPException(status_code=___, detail="Missing token")
+        raise HTTPException(status_code=401, detail="Missing token")
 
     token = authorization.split(" ")[1]
     user = MOCK_USERS.get(token)
 
     if not user:
-        raise HTTPException(status_code=___, detail="Invalid token")
+        raise HTTPException(status_code=401, detail="Invalid token")
 
     return user
 
@@ -43,11 +43,11 @@ def require_permission(resource: str, action: str):
             current_user = kwargs.get("current_user")
             role = current_user["role"]
 
-            allowed = enforcer.enforce(___, ___, ___)  # TODO
+            allowed = enforcer.enforce(role, resource, action)
 
             if not allowed:
                 raise HTTPException(
-                    status_code=___,    # TODO: HTTP status code
+                    status_code=403,
                     detail=f"Role '{role}' cannot '{action}' on '{resource}'"
                 )
             return await func(*args, **kwargs)

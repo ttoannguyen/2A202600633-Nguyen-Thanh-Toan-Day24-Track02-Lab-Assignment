@@ -3,13 +3,17 @@ import pytest
 import pandas as pd
 from src.pii.anonymizer import MedVietAnonymizer
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def anonymizer():
     return MedVietAnonymizer()
 
 @pytest.fixture
 def sample_df():
-    return pd.read_csv("data/raw/patients_raw.csv").head(50)
+    # cccd & so_dien_thoai phải đọc dạng str để giữ số 0 đầu (định danh, không phải số)
+    return pd.read_csv(
+        "data/raw/patients_raw.csv",
+        dtype={"cccd": str, "so_dien_thoai": str},
+    ).head(50)
 
 class TestPIIDetection:
 
@@ -17,18 +21,22 @@ class TestPIIDetection:
         text = "Bệnh nhân Nguyen Van A, CCCD: 012345678901"
         results = anonymizer.analyzer.analyze(text=text, language="vi",
                                                entities=["VN_CCCD"])
-        # TODO: assert rằng có ít nhất 1 result
-        assert ___
+        assert len(results) >= 1
+        assert any(r.entity_type == "VN_CCCD" for r in results)
 
     def test_phone_detected(self, anonymizer):
         text = "Liên hệ: 0912345678"
-        # TODO: viết test tương tự
-        pass
+        results = anonymizer.analyzer.analyze(text=text, language="vi",
+                                              entities=["VN_PHONE"])
+        assert len(results) >= 1
+        assert any(r.entity_type == "VN_PHONE" for r in results)
 
     def test_email_detected(self, anonymizer):
         text = "Email: nguyenvana@gmail.com"
-        # TODO: viết test
-        pass
+        results = anonymizer.analyzer.analyze(text=text, language="vi",
+                                              entities=["EMAIL_ADDRESS"])
+        assert len(results) >= 1
+        assert any(r.entity_type == "EMAIL_ADDRESS" for r in results)
 
     # --- TASK QUAN TRỌNG ---
     def test_detection_rate_above_95_percent(self, anonymizer, sample_df):
@@ -43,12 +51,13 @@ class TestAnonymization:
     def test_pii_not_in_output(self, anonymizer, sample_df):
         """Sau anonymization, không còn CCCD gốc trong output."""
         df_anon = anonymizer.anonymize_dataframe(sample_df)
+        output_blob = df_anon.astype(str).to_csv(index=False)
         for original_cccd in sample_df["cccd"]:
-            # TODO: assert CCCD gốc không xuất hiện trong df_anon
-            assert str(original_cccd) not in ___
+            assert str(original_cccd) not in output_blob
 
     def test_non_pii_columns_unchanged(self, anonymizer, sample_df):
         """Cột benh và ket_qua_xet_nghiem phải giữ nguyên."""
         df_anon = anonymizer.anonymize_dataframe(sample_df)
-        # TODO: assert hai cột này không thay đổi
-        pass
+        assert df_anon["benh"].tolist() == sample_df["benh"].tolist()
+        assert df_anon["ket_qua_xet_nghiem"].tolist() == \
+            sample_df["ket_qua_xet_nghiem"].tolist()

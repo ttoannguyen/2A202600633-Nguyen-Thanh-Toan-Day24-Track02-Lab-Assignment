@@ -1,0 +1,27 @@
+# Secrets / keys — KHÔNG commit
+.vault_key
+*.key
+*.pem
+.env
+
+# Raw PII data — KHÔNG commit (chỉ giữ data/processed)
+data/raw/*.csv
+
+# spaCy blank model cache
+.spacy_models/
+
+# Great Expectations local store
+gx/
+great_expectations/uncommitted/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.venv/
+venv/
+
+# OS
+.DS_Store
+Thumbs.db
